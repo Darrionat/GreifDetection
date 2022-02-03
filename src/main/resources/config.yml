@@ -1,0 +1,9 @@
+coreprotect:
+  enabled: false
+  # The amount of time to look back for a specific block
+  # This can be any duration with valid endings
+  time: 365d
+flagOps: true
+discordWebhook:
+  enabled: false
+  url: "paste your discord webhook here"

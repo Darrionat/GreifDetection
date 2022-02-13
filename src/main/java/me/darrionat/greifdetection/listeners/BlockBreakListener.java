@@ -24,6 +24,6 @@ public class BlockBreakListener implements Listener {
         Player p = e.getPlayer();
         if (!flagService.runChecks(p))
             return;
-        // coreProtect.
+        // coreProtect.analyzePlayer
     }
 }

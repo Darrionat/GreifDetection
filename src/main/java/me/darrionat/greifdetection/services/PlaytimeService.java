@@ -2,9 +2,10 @@ package me.darrionat.greifdetection.services;
 
 import me.darrionat.greifdetection.GreifDetection;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.PriorityQueue;
 import java.util.UUID;
 
 public class PlaytimeService {
@@ -13,16 +14,23 @@ public class PlaytimeService {
     public PlaytimeService(GreifDetection plugin) {
         OfflinePlayer[] players = plugin.getServer().getOfflinePlayers();
         for (OfflinePlayer p : players) {
-            logData.put(p.getUniqueId(), new LogInfo(p.getFirstPlayed(), p.getLastPlayed()));
+            UUID uuid = p.getUniqueId();
+            logData.put(uuid, new LogInfo(uuid, p.getFirstPlayed(), p.getLastPlayed()));
         }
     }
 
-    static class LogInfo {
+    static class LogInfo implements Comparable<LogInfo> {
+        private final UUID uuid;
         private final long firstLog, lastLog;
 
-        LogInfo(long firstLog, long lastLog) {
+        LogInfo(UUID uuid, long firstLog, long lastLog) {
+            this.uuid = uuid;
             this.firstLog = firstLog;
             this.lastLog = lastLog;
+        }
+
+        public UUID getUuid() {
+            return uuid;
         }
 
         public long getFirstLog() {
@@ -32,6 +40,21 @@ public class PlaytimeService {
         public long getLastLog() {
             return lastLog;
         }
+
+        @Override
+        public int compareTo(@NotNull PlaytimeService.LogInfo b) {
+            long diff = lastLog - firstLog;
+            long diff2 = b.lastLog - b.firstLog;
+            return (int) (diff - diff2);
+        }
+    }
+
+    private long getFirstLog(UUID uuid) {
+        return logData.get(uuid).getFirstLog();
+    }
+
+    private long getLastLog(UUID uuid) {
+        return logData.get(uuid).getLastLog();
     }
 
     /**
@@ -39,12 +62,28 @@ public class PlaytimeService {
      * <p>
      * For example: If {@code timeFrame=5000} and the player joined 4 seconds ago, return true.
      *
-     * @param p         The player to check
+     * @param uuid      The uuid of the player to check
      * @param timeFrame The amount of time to check within, in milliseconds
      * @return {@code true} if the player has joined within the given timeframe; {@code false} otherwise.
      */
-    public boolean recentFirstJoin(Player p, long timeFrame) {
-        long firstJoin = logData.get(p.getUniqueId()).getFirstLog();
+    public boolean recentFirstJoin(UUID uuid, long timeFrame) {
+        long firstJoin = getFirstLog(uuid);
         return System.currentTimeMillis() - timeFrame < firstJoin;
+    }
+
+    /**
+     * Gets the amount of time in ms since the given player's first join.
+     *
+     * @param uuid The uuid of the player to check
+     * @return milliseconds since first log. {@code -1} if the player has never joined.
+     */
+    public long getAccountAge(UUID uuid) {
+        return System.currentTimeMillis() - getFirstLog(uuid);
+    }
+
+    public PriorityQueue<LogInfo> getPriorityQueue() {
+        PriorityQueue<LogInfo> queue = new PriorityQueue<>();
+        queue.addAll(logData.values());
+        return queue;
     }
 }
